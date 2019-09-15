@@ -1,0 +1,29 @@
+;This program waits for the user to press a button from the hex keybord between 1 and 8 and then
+;flashes the LED of that number in the output (3000H). (LSB-->1 and MSB-->8)
+;eg user input: 3
+;	output: 00000100
+
+;This example is the second task of the third exercise of the second set from 2019.
+  
+START:
+	CALL KIND	;input --> A
+	CPI 09H		;if A(input) < 09H --> CY = 1
+	JNC START	;if A(input) >= 09 read again
+	MOV D,A		;D has the input now
+	MVI C,00H	;C<--00000000
+	MOV B,D		;B has the input for the loop counter
+	STC		;CY = 1 to pass it to C just in the 
+			;first iteration
+LOOP1:
+	DCR B		;B--	
+	MOV A,C
+	RAL	
+	MOV C,A		;the ace bit of C has moved left by one
+	MOV A,B
+	CPI 00H
+	JNZ LOOP1
+	MOV A,C
+	CMA
+	STA 3000H
+	JMP START
+END

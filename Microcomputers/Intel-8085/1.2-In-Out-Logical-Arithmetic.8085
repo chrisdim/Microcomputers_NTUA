@@ -1,0 +1,42 @@
+;This program flashes the LSB of the output byte in memory
+;3000H and then if the MSB of the input byte (memory address 
+;2000H) from the dip switches is OFF rotate the light bit
+;left by one each 500msec. If the MSB is ON rotate it right.
+;If the LSB of the input is ON stop rotating. 
+;If the LSB of the input becomes OFF again, continue. 
+
+;This example is the second exercise of the first set from 2019.
+  
+	IN 10H		;remove memory protection
+	MVI A,01H 	;lightByte is 01H
+	STA 3000H	;light the LSB of the output byte
+	MOV D,A 	;now D has the lightByte
+INPUT:	
+	LDA 2000H 	;read input
+	ANI 01H 	;mask the LSB
+	JNZ INPUT 	;if LSB 1 -->INPUT	
+
+	LXI B,0244H 	;0244H = 500
+	CALL DELB 	;delay 0.5s
+	
+	LDA 2000H 	;read input 
+	ANI 80H 	;mask the MSB
+	JNZ RIGHT 	;if MSB 1-->RIGHT
+
+LEFT:
+	MOV A,D 	;return the lightByte in A
+	RLC		;rotate bits of lightByte left by one
+	STA 3000H	;light the next bit of the output
+	CALL DELB	;delay 0.5s again
+	MOV D,A 	;save the lightByte in D
+	JMP INPUT	;repeat
+	
+RIGHT: 
+	MOV A,D 	;return the lightByte in A
+	RRC		;rotate bits of lightByte right by one
+	STA 3000H	;light next bit of the output
+	CALL DELB	;delay 0.5s again
+	MOV D,A 	;save the lightByte in D
+	JMP INPUT	;repeat
+
+END

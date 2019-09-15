@@ -1,0 +1,88 @@
+;This program uses K1 and K2 given from a user (hardcoded) as thresholds. When
+;an interrupt occurs the user gives with the hex keybord a two digit hex number.
+;User should give firstly the LSB and then the MSB.	If this number, say X, is:
+;			X <= K1 --> LSB LED turns ON
+;			K1 < X <= K2 --> 2nd LED turns ON
+;			X < FFH --> 3rd LED turns ON
+;AND the number is shown in the two right 7-segment LCD. In order to give another
+;number the user should first give an interrupt.
+
+;This example is the second exercise of the third set from 2019.
+
+	IN 10H
+START:	
+	LXI H,0A02H		;load HL with the start of the memory 
+	MVI M,10H		;I will store the output byte
+	INX H			;10H means print nothing
+	MVI M,10H		;I point to the block 0A00H...0A05H
+	INX H			;0A00H will have the print code of 1st
+	MVI M,10H		;digit in right and so on. So I want	
+	INX H			;0A02H to 0A05 to have code 10H, to 
+	MVI M,10H		;print nothing.
+
+	;-----here user gives threshold constants K1, K2-----	
+	MVI B,10H		;B = K1 = 10H (USER GIVEN)
+	MVI C,4AH		;C = K2 = 4AH (USER GIVEN)
+	
+	INR B			;for <= and >= K1
+	INR C			;for <= and >= K2
+	
+	MVI A,0DH		;enable interrupts
+	SIM			;in RST 6.5
+	EI
+	
+WAIT:
+	JMP WAIT
+
+INTR_ROUTINE:
+	POP H
+	;-------read input from keybord--------------------
+	CALL KIND		;reads keybord input
+	MOV D,A			;D has the least significant hex digit
+	CALL KIND		;reads keybord input
+	MOV E,A			;E has the most significant hex digit
+
+	LXI H,0A00H
+	MOV M,D			;0A00H<--least significant hex digit
+	INX H		
+	MOV M,E			;0A01H<--most significant hex digit
+	
+	;------compare with K1, K2 and light LED-----------
+	MOV A,E
+	RLC
+	RLC
+	RLC
+	RLC
+	ADD D
+	MOV D,A			;now D has the full number
+	
+	MOV A,D
+	CMP B
+	JC FIRST
+	CMP C
+	JC SECOND
+	
+	MVI A,04H
+	STA 3000H		;light 3rd LED
+	JMP LCD
+FIRST:
+	MVI A,01H
+	STA 3000H		;light 1st LED
+	JMP LCD
+SECOND:
+	MVI A,02H
+	STA 3000H		;light 2nd LED
+	JMP LCD	
+	;-------------LCD output----------------------------	
+LCD:
+	LXI D,0A00H		
+	CALL STDM
+	EI			;enable interrupts again
+OUT:
+	CALL DCD
+	JMP OUT
+END
+		
+
+	
+

@@ -1,0 +1,89 @@
+;When an interrupt occurs (RST6.5) all leds in output (3000H) turn ON. Then 
+;a down counter is shown in the left two digits of the 7-segment LCD. The LEDs
+;stay ON for 60 secs and when the counter goes to zero, the LEDs turn off. If
+;an interrupt occurs before counter goes to zero, it resets to 60 sec and starts
+;down counting again.
+
+;This example is the first exercise of the third set from 2019.
+
+START:	
+	IN 10H			;remove memory protection
+	LXI H,0A00H		;load HL with the start of the memory 
+					;I will store the output byte
+	MVI M,10H		;10H means print nothing
+	INX H			;I point to the block 0A00H...0A05H
+	MVI M,10H		;0A00H will have the print code of 1st
+	INX H			;digit in right and so on. So I want	
+	MVI M,10H		;0A00H to 0A03 to have code 10H, to 
+	INX H			;print nothing.
+	MVI M,10H
+
+	MVI A,0DH		;0DH = 00001101. Enable interrupts (EI is
+	SIM				;the 4th LSB bit) and disable RST5.5 & 7.5	
+	EI
+
+WAIT:				;infinite loop-wait for interrupts
+	JMP WAIT	
+
+;------------ROUTINE-TO-CONVERT-HEX-TO-BCD-AND-DISPLAY-IT-----------
+BCD:
+	PUSH PSW
+	PUSH B
+	PUSH D
+	PUSH H			
+	MVI B,FFH 		;B<--FF
+	MOV A,E
+DECA:
+	INR B 			;increment B, counts decades
+ 	SUI 0AH 		;A - 10(10), decrement by one decade
+	JNC DECA 		;if CY flag is not zero continue to subtract
+				
+	ADI 0AH 		;a negative number has a positive carry
+					;correct the negative result of subtraction
+	LXI H,0A04H
+	MOV M,A 		;store units in 5th digit of LCD
+				
+	INX H		
+	MOV M,B			;store decades in 6th digit of LCD
+
+	LXI D,0A00H		;move the block 0A00...0A05 to 
+	CALL STDM		;memory, where DCD routine reads
+	
+	LXI B,0032H		;BC = 50 ---> DELB 50 msec delay
+	MVI A,14H		;A = 250 --> 50 msec X 20 = 1 sec delay
+ONESECLOOP:
+	CALL DCD		;print
+	CALL DELB		;and delay for 0.004 second
+	DCR A
+	CPI 00H
+	JNZ ONESECLOOP		
+
+	POP H 		
+	POP D
+	POP B
+	POP PSW
+	RET
+
+;---------------INTERRUPT-SERVICE-ROUTINE------------------
+INTR_ROUTINE:		;this is the interrupt service routine
+	POP H			;pop PC from stack, absense of RET command
+	
+	MVI A,FFH
+	CMA
+	STA 3000H		;all lights ON
+
+	MVI E,3CH		;60sec counter
+	EI
+LOOP1:
+	CALL BCD		;convert to BCD and display
+	DCR E			;decrement loop counter, E--
+	MOV A,E
+	CPI 00H
+	JNZ LOOP1		;repeate for 60 seconds
+
+	MVI A,00H
+	CMA
+ 	STA 3000H		;turn off lights after 60 seconds
+	
+	JMP WAIT
+END

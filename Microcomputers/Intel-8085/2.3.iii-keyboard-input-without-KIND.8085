@@ -1,0 +1,163 @@
+;This program waits for the user to press a button from the hex keybord and prints its 
+;hex code in the two right digits of the 7-segment display without using KIND routine.
+
+;This example is the third task of the third exercise of the second set from 2019.
+  
+	IN 10H		;remove memory protection
+	LXI H,0A00H	;load HL with the start of the memory 
+			;I will store the output byte
+	MVI M,10H	;10H means print nothing
+	INX H		;I point to the block 0A00H...0A05H
+	MVI M,10H	;0A00H will have the print code of 1st
+	INX H		;digit in right and so on. So I want	
+	MVI M,10H	;0A00H to 0A03 to have code 10H, so to 
+	INX H		;print nothing.
+	MVI M,10H		
+START:
+
+LINE_0:		
+	MVI A,FEH	;FEH = 11111110, means select line 0
+	STA 2800H	;store it in 2800H and declare you
+			;are processing line 0
+	LDA 1800H	;read the column
+	ANI 07H		;reset the 5 MSBs, because the last 3 
+			;have the information of the column
+	MVI C,86H	;if A read is 00000110 then button 
+	CPI 06H		;from column 1 is pressed. So go to
+	JZ DISPLAY	;DISPLAY with C having the code for 
+			;INSTR_STEP
+	MVI C,85H	;same for FETCH PC
+	CPI 05H		;but now I check if A = 00000101
+	JZ DISPLAY	;means 2nd button is pressed
+	MVI C,F7H	;same for HRDWR STEP 
+	CPI 03H		;but now I check if A = 00000011
+	JZ DISPLAY	;means 3rd button is pressed
+
+LINE_1:		
+	MVI A,FDH
+	STA 2800H	
+	LDA 1800H	
+	ANI 07H	
+	MVI C,84H
+	CPI 06H		;RUN
+	JZ DISPLAY
+	MVI C,80H
+	CPI 05H		;FETCH REG
+	JZ DISPLAY
+	MVI C,82H
+	CPI 03H		;FETCH ADRS
+	JZ DISPLAY
+
+LINE_2:			
+	MVI A,FBH
+	STA 2800H		
+	LDA 1800H		
+	ANI 07H		
+	MVI C,00H
+	CPI 06H		;0
+	JZ DISPLAY
+	MVI C,83H
+	CPI 05H		;STORE/INCR
+	JZ DISPLAY
+	MVI C,81H
+	CPI 03H		;DECR
+	JZ DISPLAY
+
+LINE_3:			
+	MVI A,F7H
+	STA 2800H		
+	LDA 1800H		
+	ANI 07H		
+	MVI C,01H
+	CPI 06H		;1
+	JZ DISPLAY
+	MVI C,02H
+	CPI 05H		;2
+	JZ DISPLAY
+	MVI C,03H
+	CPI 03H		;3
+	JZ DISPLAY
+
+LINE_4:			
+	MVI A,EFH
+	STA 2800H		
+	LDA 1800H		
+	ANI 07H		
+	MVI C,04H
+	CPI 06H		;4
+	JZ DISPLAY
+	MVI C,05H
+	CPI 05H		;5
+	JZ DISPLAY
+	MVI C,06H
+	CPI 03H		;6
+	JZ DISPLAY
+
+LINE_5:			
+	MVI A,DFH
+	STA 2800H		
+	LDA 1800H		
+	ANI 07H		
+	MVI C,07H
+	CPI 06H		;7
+	JZ DISPLAY
+	MVI C,08H
+	CPI 05H		;8
+	JZ DISPLAY
+	MVI C,09H
+	CPI 03H		;9
+	JZ DISPLAY
+
+LINE_6:			
+	MVI A,BFH
+	STA 2800H		
+	LDA 1800H		
+	ANI 07H		
+	MVI C,0AH
+	CPI 06H		;A
+	JZ DISPLAY
+	MVI C,0BH
+	CPI 05H		;B
+	JZ DISPLAY
+	MVI C,0CH
+	CPI 03H		;C
+	JZ DISPLAY
+
+LINE_7:			
+	MVI A,7FH
+	STA 2800H		
+	LDA 1800H		
+	ANI 07H		
+	MVI C,0DH
+	CPI 06H		;D
+	JZ DISPLAY
+	MVI C,0EH
+	CPI 05H		;E
+	JZ DISPLAY
+	MVI C,0FH
+	CPI 03H		;F
+	JZ DISPLAY
+
+	JMP START	;if no button is pressed, check again
+	
+DISPLAY:
+	LXI H,0A04H
+	MOV A,C		;C has the button's code
+	ANI 0FH		;isolate the 4 LSBs
+	MOV M,A		;store them to 0A00H(first digit from left)
+	INX H		;HL++
+	MOV A,C		
+	ANI F0H		;ioslate the 4 MSBs
+	RRC		;shift them to the 4 LSBs
+	RRC
+	RRC
+	RRC			
+	MOV M,A		;store them to 0A01(second digit from left)
+
+	LXI D,0A00H	;move the block 0A00 to 0A05 to the memory
+	CALL STDM	;where the DCD routine reads
+	CALL DCD	;print
+
+	JMP START
+
+	END

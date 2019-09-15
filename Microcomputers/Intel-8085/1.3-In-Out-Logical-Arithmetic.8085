@@ -1,0 +1,43 @@
+;This example reads the input byte (2000H) and if the number is less
+;than 99 decimal (63H), prints in output (3000H) the number in BCD 
+;format. 
+;EG input: 90 decimal (5AH)---> output: 10010000
+;If the input is bigger than 99 the output should flash the 4 MSBs
+;and then the 4 LSBs continuously.
+
+;This example is the third exercise of the first set from 2019.
+
+INPUT:	
+	LDA 2000H 	;read input
+	CPI 63H 	;A - 63H
+	JNC ERROR 	;if (A - 63H) > 0 flag NC = 1
+	MVI B,FFH 	;B<--FF
+DECA:
+	INR B 		;increment B, counts decades
+ 	SUI 0AH 	;A - 10(10), decrement by one decade
+	JNC DECA 	;if CY flag is not zero continue to subtract
+			;a negative number has a positive carry
+	ADI 0AH 	;correct the negative result of subtraction
+	MOV D,A 	;store units in D
+			
+	MOV A,B 	;bring decades in format xxxx0000 with 4 RLCs
+	RLC
+	RLC
+	RLC
+	RLC
+
+	ADD D		;add A(xxxx0000) with D(0000xxxx)
+
+	STA 3000H	;print output
+
+	JMP INPUT
+ERROR:
+	MVI A,0FH	; A = 00001111
+	STA 3000H
+	LXI B,0244H 	; 0244H = 500
+	CALL DELB	;delay 500 ms
+	CMA		;complementary --> A = 11110000
+	STA 3000H
+	CALL DELB
+	JMP INPUT
+END

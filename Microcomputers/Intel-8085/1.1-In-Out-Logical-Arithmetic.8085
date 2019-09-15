@@ -1,0 +1,25 @@
+;This program reads which dip switch is ON (from right to left, decimal number)
+;and flashes the output bit of the same number, but in binary form.
+
+;This example is the first exercise of the first set from 2019.
+
+START:	
+	MVI C,08H 	;C<--08H
+	LDA 2000H	;read input from dip switches
+	
+JUMP1:
+	RAL		;rotate bits of A left by one
+	JC JUMP2	;if Carry flag is SET (CY = 1) jump to JUMP1
+	DCR C		;C--
+	JNZ JUMP1	;if not zero jump JUMP2
+	
+JUMP2:
+	MOV A,C
+	CMA		;A-->A complementary 
+			;because of complementary output logic
+			;means that output byte is converted by
+			;its hardware
+	STA 3000H	;print register A
+	JMP START
+	
+END

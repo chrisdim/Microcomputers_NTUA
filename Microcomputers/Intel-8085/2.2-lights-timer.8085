@@ -1,0 +1,59 @@
+;This program flashes the output LEDs (address 3000H) when the MSB of the dip switch input 
+;(address 2000H) goes from OFF to ON and OFF again (push button). The output is ON for 30 secs
+;and then OFF. But if, before 30 secs are down, I push the button again the timer resets to 30 secs
+;again.
+;Note that the system's time accuracy is bigger than 1/5 sec.
+
+;This example is the second exercise of the second set from 2019.
+  
+	LXI B,00C8H		;BC = 200
+	MVI D,96H		;D = 150 (150*200 msec = 30 sec)
+START:
+	MVI A,00H
+	CMA			;output has complementary logic
+	STA 3000H		;turn off all output bits
+				;the MSB is currently OFF 
+OFF_TO_ON:			;check for ON
+	CALL DELB
+	LDA 2000H
+	ANI 80H
+	CPI 80H
+	JNZ OFF_TO_ON
+ON_TO_OFF:			;check for OFF
+	CALL DELB
+	LDA 2000H
+	ANI 80H
+	CPI 00H
+	JNZ ON_TO_OFF
+				;since we are here the push button has
+				;been pressed so I light the output byte
+	MVI A,FFH
+	CMA			;complementary logic
+	STA 3000H		;light output byte
+				;I have lighted the output and every 
+				;200 msec I check for OFF-->ON-->ON 
+				;and I reset the D (down counter)
+CONTINUE:
+	DCR D			;D--
+	MOV A,D
+	CPI 00H
+	JZ START		;if D = 0 go to start
+	CALL DELB		;delay 200msec			
+	LDA 2000H		;check for OFF-->ON
+	ANI 80H
+	CPI 80H
+	JNZ CONTINUE
+WAIT_FOR_OFF:			;check for OFF-->ON
+	CALL DELB
+	DCR D			;if OFF-->ON is done then D-- because
+				;there is an extra delay to read again
+				;for ON-->OFF.
+	LDA 2000H		;check for ON-->OFF
+	ANI 80H
+	CPI 00H			;note that CPI and JNZ have to be together
+	JNZ WAIT_FOR_OFF 	;because if another instruction is between
+				;it may change the flag needed for the comparison
+	MVI D,96H		;if OFF-->ON-->OFF reset D to 150
+	JMP CONTINUE
+
+END

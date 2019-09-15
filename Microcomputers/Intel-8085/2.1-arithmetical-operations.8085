@@ -1,0 +1,84 @@
+;2.1.a-->This section stores numbers 0 to 255 in the memory block that starts in address
+;0900H
+;2.1.b-->This section counts the number of aces in all the above stored binary numbers
+;and stores the result in register pair BC
+;2.1.c-->This section measures the number of numbers that are between 10H and 60H and 
+;stores the result in register D
+
+;This example is the first exercise of the second set from 2019.
+;
+;KNOWN BUG IN TSIK SIMULATOR:
+;It doesn't show results in run mode. If you run it step by step it's ok.
+
+;2.1.a----------------------------------------------------------------
+;remove memory protection
+	IN 10H
+	MVI E,00H	;E<--0
+	LXI H,0900H 	;HL<--0900H
+			;store 0 to 255 in memory locations 0900h to 0A00h
+START:
+	MOV M,E 	;store number in memory of HL pair
+	INR E 		;E++ (next number)
+	INX H		;HL++; (next memory location) 
+	MOV A,E		;A<--E
+	CPI FFH		;A - FFH = 0 => Z = 0
+	JNZ START 	;this loop is continued till B = 255
+;2.2.b----------------------------------------------------------------
+			;now I use E as counter for numbers and BC pair for the number 
+			;ones in 0 to 255. HL contains the memory as mentioned above.
+			;D has the number to be processed
+	MVI B,00H	;reset B
+	MVI C,00H	;reset C
+	MVI E,FFH	
+	LXI H,0900H	;reset memory register pair HL
+LOOPNUMBERS:
+	INR E		;E++
+	MOV D,M 	;load number from memory in D
+	MOV A,E		
+	STA 0A01H	;store E in memory 0A01H
+	MVI E,00H	;reset E for passing it in function
+	CALL ONES	;call ONES
+	LDA 0A01H	
+	MOV E,A		;restore E drom memory 0A01H
+	INX H		;HL++
+	MOV A,E		
+	CPI FFH
+	JNZ LOOPNUMBERS ;loop 0 to 255
+	JMP NEXT
+
+			;here resister D has the number to be processed
+ONES:
+	INR E 		;E is loop counter from 1 to 8
+	MOV A,D		;now A has the number to be processed
+	ANI 01H 	;mask the LSB
+	JZ SKIPADD	;if LSB is 0 skip BC++ 
+	INX B		;BC++	
+SKIPADD:
+	MOV A,D
+	RRC
+	MOV D,A		;now D has the numbers shifted right by one bit
+	MOV A,E
+	CPI 08H		;loop  1 to 8
+	JNZ ONES
+	MVI E,00H	;reset E for return to "main"		
+	RET
+;2.3.c----------------------------------------------------------------
+			;here D has the number of numbers between  				
+			;10H and 60H (10H<=number<=60H)
+NEXT:
+	LXI H,0900H	;reset memory register pair HL
+	MVI D,00H	;reset D
+LOOP1:
+	MOV A,M
+	INX H
+	CPI 10H		;if A < 10H --> CY = 1
+	JC LOOP1	;if number<10H ---> LOOP1
+	INR D
+	CPI 60H		;if A = 60H --> NZ = 0
+	JNZ LOOP1	;if number<61H or <=60 ---> LOOP1
+
+	END
+			;programm ends with numbers 0 to 255 (dec) stored 
+			;in 0900H to 0A00H, BC register with the number
+			;of ones and D with the number of numbers 
+			;between 0H and 60H

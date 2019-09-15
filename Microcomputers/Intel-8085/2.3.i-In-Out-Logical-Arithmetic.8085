@@ -1,0 +1,36 @@
+;This program implements the following:
+;Find the last 1 of the input and flashes all output leds till that position
+;and turns off the rest.
+;eg input: 10101000
+;  output: 11111000 
+
+;This example is first task of the third exercise of the second set from 2019.
+
+START:
+	LDA 2000H		;read input
+	MOV B,A		;B has the input byte
+	MVI C,00H		;reset C, C is the bit counter 1 to 8
+	MVI D,FFH		;D is 11111111
+LOOP1:
+	INR C		;C++	
+	MOV A,B		
+	ANI 01H		;mask the LSB
+	JNZ FLASH		;if I find a '1' I exit the loop and flash
+	;----while I find '0's I put zeros in the end of D----
+	MOV A,B		
+	RRC			;rotate input byte right, so in next loop to check the next bit
+	MOV B,A
+	MOV A,D
+	STC			;set CY flag
+	CMC			;not CY ---> CY = 0;
+	RAL			;with left rotation I put the flag in the end of D
+	MOV D,A
+	MOV A,C
+	CPI 08H		;if I scan all 8 bits exit the loop
+	JNZ LOOP1
+FLASH:
+	MOV A,D
+	CMA
+	STA 3000H		;output
+	JMP START
+END 
