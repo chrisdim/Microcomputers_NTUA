@@ -1,0 +1,61 @@
+;This program reads the input from the dip switches (2000H) and
+;if input-lsb is ON:
+;	it starts counting upwards till the number given in the
+;	4 msbs of the input. When it reaches that number it starts
+;	counting towards zero. As soon as, it reaches zero it checks
+;	if that upper bound was changed from the user and starts
+;	counting to that upper bound, and so on.
+;	The counting frequency is 1 Hz.
+;if input-lsb is OFF:
+;	If user turns the input-lsb to OFF during the execution
+;	the program should stop counting till it becomes ON again.
+; Author: Ntouros Evangelos
+
+lxi b,03e8h			;(bc)=1000 for the 1 sec delay
+mvi d,ffh			;d has the timer's value. Initialize with ffh
+					;and in the first increase will go to 0 
+start:
+	lda 2000h
+	ani f0h			;4 msb
+	jz start
+
+	rrc
+	rrc
+	rrc
+	rrc
+	mov e,a			;e has the upper timer bound
+
+up:
+	lda 2000h
+	ani 01h
+	jz up
+
+	mov a,d			;d has the timer's value
+	inr a
+	mov d,a
+	cma				;because of complementary logic
+	sta 3000h
+	cma
+	call delb		;delay 1 sec
+
+	cmp e
+	jnz up			;when (d)=(e) change to down timer
+
+down:
+	lda 2000h
+	ani 01h
+	jz down
+
+	mov a,d
+	dcr a
+	mov d,a
+	cma
+	sta 3000h
+	cma
+	call delb
+
+	cpi 00h
+	jnz down		;when (d)=(e) go to start, read the new upper bound and start the up timer
+	jmp start
+
+end

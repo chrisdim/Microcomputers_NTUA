@@ -1,0 +1,95 @@
+;This program simulates a train (single led) that is moving from right (output msb)
+;to left (till output lsb), with 2 Hz frequency. When it reaches there is returns and so on.
+;
+;The above occurs for input-msb ON. If it is OFF the train starts moving in the
+;opposite direction.
+;
+;If input-lsb is OFF the train stops moving and when it turn ON again it starts
+;moving again to the same direction as before stopping.
+; Author: Ntouros Evangelos
+
+	lxi b,01f4h						;bc=500, for delay (500 msec)
+	mvi d,01h
+	mvi e,08h
+
+rotate_right:
+	in 20h
+	ani 01h
+	jz rotate_right					;if input-lsb is 0 stop rotating
+
+	in 20h
+	ani 80h
+	jz rotate_left_inverse			;if input msb is 0 change inverse rotation
+
+	mov a,d							;d has the output byte
+	rrc
+	cma
+	out 30h
+	cma
+	call delb
+	mov d,a
+	cpi 01h
+	jnz rotate_right				;rotate right till train arrives to the right side (output=01h)
+
+rotate_left:
+	in 20h
+	ani 01h
+	jz rotate_left
+
+	in 20h
+	ani 80h
+	jz rotate_right_inverse			;if input msb is 0 change inverse rotation
+
+	mov a,d
+	rlc
+	cma
+	out 30h
+	cma
+	call delb
+	mov d,a
+	cpi 80h
+	jnz rotate_left
+	jmp rotate_right
+
+;------------------inverse operation---------------------------------------
+
+rotate_right_inverse:
+	in 20h
+	ani 01h
+	jz rotate_right_inverse
+
+	in 20h
+	ani 80h
+	jnz rotate_left					;if input msb is 1 change regular rotation
+
+	mov a,d
+	rrc
+	cma
+	out 30h
+	cma
+	call delb
+	mov d,a
+	cpi 01h
+	jnz rotate_right_inverse
+
+rotate_left_inverse:
+	in 20h
+	ani 01h
+	jz rotate_left_inverse
+
+	in 20h
+	ani 80h
+	jnz rotate_right				;if input msb is 1 change regular rotation
+
+	mov a,d
+	rlc
+	cma
+	out 30h
+	cma
+	call delb
+	mov d,a
+	cpi 80h
+	jnz rotate_left_inverse
+	jmp rotate_right_inverse
+
+end

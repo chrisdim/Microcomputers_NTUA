@@ -1,0 +1,58 @@
+;This program reads two hexadecimal numbers given by the user and
+;subtracts them showing the result in the second and the third (from left)
+;digit of the 7-segment LCD display. The first digit shows "-" if the result
+;was negative, or nothing if the result was positive.
+; Author: Tagarakis Konstantinos
+
+START:
+    in 10h
+    lxi h,0900h
+    mvi m,10h
+    inx h
+    mvi m,10h
+    inx h
+    mvi m,10h
+
+    mvi a,10h
+    sta 0905h
+
+READ_X:
+    call KIND
+	mov b,a            ;X
+READ_Y:
+	call KIND
+	mov c,a            ;Y
+
+CHECKFORSIGN:
+	mov a,b
+	sub c              ;X-Y
+	jp plus            ;if Y>X then -(Y-X), otherwise I do X-Y
+
+MINUS:
+	mvi a,1ch          ;1C is the code for symbol "-"
+	sta 0905h
+	mov a,c            ;X<==Y
+	mov c,b            ;Y<==X
+	sub c              ;Y-X
+
+PLUS:
+	daa                ;hex to bcd format
+STORE:
+	mov b,a
+	ani 0fh
+	sta 0903h
+	mov a,b
+	ani f0h
+	rrc
+	rrc
+	rrc
+	rrc
+	sta 0904h
+DISP:
+	lxi d,0900h
+	call STDM
+TAG:
+    call DCD
+	jmp START
+
+end

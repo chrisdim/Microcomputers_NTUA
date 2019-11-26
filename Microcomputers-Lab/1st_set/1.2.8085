@@ -1,0 +1,90 @@
+;This program is a timer-counter and its output is in 3000h
+;in binary format, in the 4 msbs.
+;The counting frequency is implemented id DELAY loop. In order
+;to achieve some specific frequency one has to compute how many
+;circles of cpu this loop needs and then adjust register b which
+;contains the number of this loop's iterations.
+;
+;When input-lsb is ON:
+;	interrupts should be enabled. When an interrupt occurs an
+;	interrupt counter should be incremented and shown all the time
+;	in the right side of the 7-segment LCD display id decimal format.
+; Author: Ntouros Evangelos
+
+	in 10h						;necessary for DCD, STDM. Removes memory protection
+
+	lxi h,0a00h
+	mvi m,00h					;I set in 0a00h the inter_counter to ZERO
+
+	mvi b,32h					;(b) = 50 this has to be adjusted for desired delay
+
+	lxi h,0a00h					;the start of the message for display
+	inx h
+	mvi m,10h
+	inx h
+	mvi m,10h
+	inx h
+	mvi m,10h
+	inx h
+	mvi m,10h
+	inx h
+	mvi m,10h					;set 5 most significand LCD digits to ZERO
+
+	mvi a,0dh					;enable interrupt RST 6.5
+	sim
+	ei							;this is not needed maybe
+
+	mvi d,ffh					;d saves the timer_counter's value
+LOOP1:
+	push d
+	lxi d,0a00h					;load the contents of 0A00h to the address where DCD reads
+	call stdm
+	pop d
+
+	lda 2000h
+	ani 01h
+	cz DISABLE_INTERRUPTS		;if input-lsb = 0 disable interrupts
+	cnz ENABLE_INTERRUPTS		;otherwise enable them
+
+	;this block updates timer_counter and displays it in the 4 msbs
+	mov a,d
+	inr a
+	mov d,a
+	rlc
+	rlc
+	rlc
+	ani f0h
+	cma
+
+	push b
+DELAY:
+	sta 3000h
+	call dcd					;print in 7-segment the inter_counter
+	dcr b
+	jnz DELAY					;jump to delay as many times needed to achieve the desired delay
+	pop b						;restore b
+
+	inr d
+	jmp LOOP1
+
+
+INTR_ROUTINE:
+	di
+	push psw
+	push h
+
+	lxi h,0a00h
+	inr m			;update the inter_counter value
+
+	pop h
+	pop psw
+	ei
+	ret
+
+DISABLE_INTERRUPTS:
+	di
+	ret
+ENABLE_INTERRUPTS:
+	ei
+	ret
+end
