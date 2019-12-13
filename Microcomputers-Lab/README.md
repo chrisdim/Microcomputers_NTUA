@@ -13,6 +13,10 @@
 Peripherals of **EASYAVR6**
 * 4x4 keypad
 * LCD 2x16
+
 ###### 4th set
+* One wire communication protocol
+* Communication with temperature sensor, DS1820.
+
 ###### 5th set
 ###### 6th set
