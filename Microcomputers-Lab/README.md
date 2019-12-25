@@ -19,4 +19,7 @@ Peripherals of **EASYAVR6**
 * Communication with temperature sensor, DS1820.
 
 ###### 5th set
+* USART
+* ADC
+
 ###### 6th set
