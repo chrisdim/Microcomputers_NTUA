@@ -10,7 +10,7 @@
 * Timers
 
 ###### 3rd set
-Peripherals of **EASYAVR6**
+Peripherals of EASYAVR6
 * 4x4 keypad
 * LCD 2x16
 
