@@ -21,5 +21,3 @@ Peripherals of **EASYAVR6**
 ###### 5th set
 * USART
 * ADC
-
-###### 6th set
