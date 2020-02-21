@@ -1,15 +1,15 @@
 /*
- * This program measures the analog voltage of the potensiometer in EASYAVR6 
- * development board and sends it with usart. 
- * 
+ * This program measures the analog voltage of the potensiometer in EASYAVR6
+ * development board and sends it with usart.
+ *
  * It measures two decimal digits.
 
- * ADC values are received via ADC interrupts. In 5.2.b.c file the program has 
+ * ADC values are received via ADC interrupts. In 5.2.b.c file the program has
  * the same functionality but the ADC values are received by polling in ADCSRA
  * register.
  *
  * 5.2.a.asm is the same program implemented in assembly language.
- * 
+ *
  * The main program is a binary counter in the LEDS of PORTB.
  *
  * Author: Ntouros Evangelos
@@ -41,15 +41,15 @@ ISR(TIMER1_OVF_vect)
 
 ISR(ADC_vect)
 {
-	char integer = (ADC*5)/1024 + 0x30;
-	char first_decimal = (ADC*5)%1024/100 + 0x30;
-	char second_decimal = ((ADC*5)%1024)%10 + 0x30;
+    char integer = (ADC*5)/1024 + 0x30;
+    char first_decimal = ((ADC*5)%1024*10)/1024 + 0x30;
+    char second_decimal = ((((ADC*5)%1024*10)%1024)*10)/1024 + 0x30;
 	usart_transmit(integer);
 	usart_transmit('.');
 	usart_transmit(first_decimal);
 	usart_transmit(second_decimal);
 	usart_transmit(0x0a);
-	
+
 	ADCSRA |= (1<<ADSC);          // Start the next conversion
 }
 
@@ -58,18 +58,18 @@ int main(void)
 	DDRB = 0xff;
 	usart_init();
 	ADC_init();
-	
+
 	TIMSK = (1 << TOIE1);				//Timer1 ,interrupt enable
 	TCCR1B = 0x05;						//frequency of Timer1 8MHz/1024
 	TCNT1 = 63974;						//Timer set to overflow in 200 msec
 
 	sei();
-	
+
 	while (1)
 	{
 
 	}
-	
+
 	return 0;
 }
 
